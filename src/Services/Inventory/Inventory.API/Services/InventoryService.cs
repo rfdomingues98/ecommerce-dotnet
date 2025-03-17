@@ -22,6 +22,7 @@ public class InventoryService : IInventoryService
     private readonly IEventProducer _eventProducer;
     private readonly ILogger<InventoryService> _logger;
     private readonly ICacheService _cacheService;
+    private const string TOPIC_NAME = "inventory-events";
 
     public InventoryService(InventoryContext context, IEventProducer eventProducer, ICacheService cacheService, ILogger<InventoryService> logger)
     {
@@ -70,7 +71,7 @@ public class InventoryService : IInventoryService
             // Update cache
             await _cacheService.SetAsync(cacheKey, item, TimeSpan.FromMinutes(5));
 
-            await _eventProducer.ProduceAsync("inventory-events", new InventoryChangedEvent
+            await _eventProducer.ProduceAsync(TOPIC_NAME, new InventoryChangedEvent
             {
                 ProductId = productId,
                 Sku = item.Sku,
@@ -102,7 +103,7 @@ public class InventoryService : IInventoryService
         // Cache the newly created item
         await _cacheService.SetAsync(cacheKey, item, TimeSpan.FromMinutes(5));
 
-        await _eventProducer.ProduceAsync("inventory-events", new InventoryChangedEvent
+        await _eventProducer.ProduceAsync(TOPIC_NAME, new InventoryChangedEvent
         {
             ProductId = item.ProductId,
             Sku = item.Sku,
@@ -174,7 +175,7 @@ public class InventoryService : IInventoryService
             // Update cache
             await _cacheService.SetAsync(cacheKey, item, TimeSpan.FromMinutes(5));
 
-            await _eventProducer.ProduceAsync("inventory-events", new InventoryChangedEvent
+            await _eventProducer.ProduceAsync(TOPIC_NAME, new InventoryChangedEvent
             {
                 ProductId = productId,
                 Sku = item.Sku,
@@ -235,7 +236,7 @@ public class InventoryService : IInventoryService
             // Update cache
             await _cacheService.SetAsync(cacheKey, item, TimeSpan.FromMinutes(5));
 
-            await _eventProducer.ProduceAsync("inventory-movements", new InventoryReservedEvent
+            await _eventProducer.ProduceAsync(TOPIC_NAME, new InventoryReservedEvent
             {
                 ProductId = productId,
                 Sku = item.Sku,
@@ -246,7 +247,7 @@ public class InventoryService : IInventoryService
             // Check if stock lever is low after reservation
             if (item.QuantityAvailable <= item.ReorderThreshold)
             {
-                await _eventProducer.ProduceAsync("inventory-events", new LowStockEvent
+                await _eventProducer.ProduceAsync(TOPIC_NAME, new LowStockEvent
                 {
                     ProductId = productId,
                     Sku = item.Sku,
