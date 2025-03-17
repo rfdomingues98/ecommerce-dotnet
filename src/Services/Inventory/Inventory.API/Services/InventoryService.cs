@@ -1,6 +1,7 @@
 using Inventory.API.Data;
 using Inventory.API.Events;
 using Inventory.API.Models;
+using Inventory.API.Models.Dtos;
 using Inventory.API.Services.Caching;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ namespace Inventory.API.Services;
 public interface IInventoryService
 {
     Task<InventoryItem> GetByProductIdAsync(Guid productId);
+    Task<PagedResponse<InventoryItem>> GetAllProductsAsync(InventoryQueryParametersDto parameters);
     Task<bool> ReserveStockAsync(Guid productId, int quantity, Guid orderId);
     Task<bool> ReleaseStockAsync(Guid productId, int quantity, Guid orderId);
     Task<bool> AdjustStockAsync(Guid productId, int quantity, string reason);
@@ -115,6 +117,68 @@ public class InventoryService : IInventoryService
 
         return item;
 
+    }
+
+    public async Task<PagedResponse<InventoryItem>> GetAllProductsAsync(InventoryQueryParametersDto parameters)
+    {
+        IQueryable<InventoryItem> query = _context.InventoryItems.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(parameters.Sku))
+        {
+            query = query.Where(i => i.Sku.Contains(parameters.Sku));
+        }
+
+        if (parameters.MaxStock.HasValue)
+        {
+            query = query.Where(i => i.QuantityAvailable <= parameters.MaxStock.Value);
+        }
+
+        if (parameters.MinStock.HasValue)
+        {
+            query = query.Where(i => i.QuantityAvailable >= parameters.MinStock.Value);
+        }
+
+        if (parameters.LowStockOnly.HasValue && parameters.LowStockOnly.Value)
+        {
+            query = query.Where(i => i.QuantityAvailable <= i.ReorderThreshold);
+        }
+
+        var totalItems = await query.CountAsync();
+        query = parameters.SortBy?.ToLower() switch
+        {
+            "productid" => parameters.SortDescending ? query.OrderByDescending(i => i.ProductId) : query.OrderBy(i => i.ProductId),
+            "stock" => parameters.SortDescending ? query.OrderByDescending(i => i.QuantityAvailable) : query.OrderBy(i => i.QuantityAvailable),
+            "reserved" => parameters.SortDescending ? query.OrderByDescending(i => i.QuantityReserved) : query.OrderBy(i => i.QuantityReserved),
+            "location" => parameters.SortDescending ? query.OrderByDescending(i => i.WarehouseCode) : query.OrderBy(i => i.WarehouseCode),
+            _ => parameters.SortDescending ? query.OrderByDescending(i => i.Sku) : query.OrderBy(i => i.Sku)
+        };
+
+        var items = await query
+            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+            .Take(parameters.PageSize)
+            .ToListAsync();
+
+        var response = PagedResponse<InventoryItem>.Create(items, totalItems, parameters.PageNumber, parameters.PageSize);
+
+        response.Metadata.Add("filters", new
+        {
+            sku = parameters.Sku,
+            minStock = parameters.MinStock,
+            maxStock = parameters.MaxStock,
+            lowStockOnly = parameters.LowStockOnly,
+        });
+        response.Metadata.Add("sorting", new
+        {
+            by = parameters.SortBy,
+            descending = parameters.SortDescending
+        });
+
+
+        // Cache the result with a key that includes the query parameters
+        var cacheKey = $"inventory:all:{parameters.PageNumber}:{parameters.PageSize}:{parameters.Sku}:{parameters.MinStock}:{parameters.MaxStock}:{parameters.LowStockOnly}:{parameters.SortBy}:{parameters.SortDescending}";
+        await _cacheService.SetAsync(cacheKey, response, TimeSpan.FromMinutes(5));
+
+        return response;
     }
 
     public async Task<InventoryItem> GetByProductIdAsync(Guid productId)
