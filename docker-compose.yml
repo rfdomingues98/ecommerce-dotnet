@@ -96,8 +96,9 @@ services:
       - sqlserver
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__InventoryDB=Server=sqlserver;Database=InventoryDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True
-      - Kafka__BootstrapServers-kafka:29092
+      - Kafka__BootstrapServers=kafka:29092
       - Redis__ConnectionString=redis:6379
     ports:
       - 5101:80
@@ -107,69 +108,69 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-  order-api:
-    build:
-      context: .
-      dockerfile: src/Services/Order/Order.API/Dockerfile
-    depends_on:
-      - sqlserver
-      - kafka
-      - redis
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__OrderDB=Server=sqlserver;Database=OrderDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True
-      - Kafka__BootstrapServers=kafka:29092
-      - Redis__ConnectionString=redis:6379
-    ports:
-      - "5102:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # order-api:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Order/Order.API/Dockerfile
+  #   depends_on:
+  #     - sqlserver
+  #     - kafka
+  #     - redis
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__OrderDB=Server=sqlserver;Database=OrderDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True
+  #     - Kafka__BootstrapServers=kafka:29092
+  #     - Redis__ConnectionString=redis:6379
+  #   ports:
+  #     - "5102:80"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
-  product-api:
-    build:
-      context: .
-      dockerfile: src/Services/Product/Product.API/Dockerfile
-    depends_on:
-      - sqlserver
-      - kafka
-      - redis
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__ProductDB=Server=sqlserver;Database=ProductDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True
-      - Kafka__BootstrapServers=kafka:29092
-      - Redis__ConnectionString=redis:6379
-    ports:
-      - "5103:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  # product-api:
+  #   build:
+  #     context: .
+  #     dockerfile: src/Services/Product/Product.API/Dockerfile
+  #   depends_on:
+  #     - sqlserver
+  #     - kafka
+  #     - redis
+  #   environment:
+  #     - ASPNETCORE_ENVIRONMENT=Development
+  #     - ConnectionStrings__ProductDB=Server=sqlserver;Database=ProductDb;User Id=sa;Password=StrongPassword123!;TrustServerCertificate=True
+  #     - Kafka__BootstrapServers=kafka:29092
+  #     - Redis__ConnectionString=redis:6379
+  #   ports:
+  #     - "5103:80"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
-  notification-api:
-    build:
-      context: .
-      dockerfile: src/Services/Notification/Notification.API/Dockerfile
-    depends_on:
-      - kafka
-      - redis
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - Kafka__BootstrapServers=kafka:29092
-      - Redis__ConnectionString=redis:6379
-    ports:
-      - "5104:80"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+  #notification-api:
+  #  build:
+  #    context: .
+  #    dockerfile: src/Services/Notification/Notification.API/Dockerfile
+  #  depends_on:
+  #    - kafka
+  #    - redis
+  #  environment:
+  #    - ASPNETCORE_ENVIRONMENT=Development
+  #    - Kafka__BootstrapServers=kafka:29092
+  #    - Redis__ConnectionString=redis:6379
+  #  ports:
+  #    - "5104:80"
+  #  healthcheck:
+  #    test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+  #    interval: 30s
+  #    timeout: 10s
+  #    retries: 3
+  #    start_period: 40s
 
 volumes:
   kafka-data:
