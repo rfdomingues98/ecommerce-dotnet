@@ -1,8 +1,6 @@
-using System.Text.Json.Serialization;
+namespace Inventory.API.Models.Dtos;
 
-namespace Inventory.API.Models;
-
-public class InventoryItem
+public class InventoryItemDto
 {
     public Guid Id { get; set; }
     public Guid ProductId { get; set; }
@@ -14,6 +12,6 @@ public class InventoryItem
     public DateTime LastRestockDate { get; set; }
     public string WarehouseCode { get; set; }
 
-    [JsonIgnore]
-    public virtual ICollection<InventoryMovement> Movements { get; set; } = new List<InventoryMovement>();
+    // No circular reference
+    public List<InventoryMovementDto> RecentMovements { get; set; } = new List<InventoryMovementDto>();
 }

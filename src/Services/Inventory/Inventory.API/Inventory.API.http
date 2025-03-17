@@ -1,6 +1,98 @@
-@Inventory.API_HostAddress = http://localhost:5293
+@baseUrl = http://localhost:5101
+@contentType = application/json
+@productId = 3fa85f64-5717-4562-b3fc-2c963f66afa6
+@orderId = 6fa85f64-5717-4562-b3fc-2c963f66afa6
 
-GET {{Inventory.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### Health Check
+GET {{baseUrl}}/health
 
-###
+### Create a new inventory item
+POST {{baseUrl}}/api/v1/inventory
+Content-Type: {{contentType}}
+
+{
+    "productId": "{{productId}}",
+    "sku": "PROD-001",
+    "quantityAvailable": 100,
+    "quantityReserved": 0,
+    "reorderThreshold": 20,
+    "reorderQuantity": 50,
+    "warehouseCode": "MAIN-A1",
+    "lastRestockDate": "2023-08-01T00:00:00Z"
+}
+
+### Get inventory item by product ID
+GET {{baseUrl}}/api/v1/inventory/{{productId}}
+
+### Reserve stock for an order
+POST {{baseUrl}}/api/v1/inventory/reserve
+Content-Type: {{contentType}}
+
+{
+    "productId": "{{productId}}",
+    "quantity": 5,
+    "orderId": "{{orderId}}"
+}
+
+### Release reserved stock
+POST {{baseUrl}}/api/v1/inventory/release
+Content-Type: {{contentType}}
+
+{
+    "productId": "{{productId}}",
+    "quantity": 5,
+    "orderId": "{{orderId}}"
+}
+
+### Adjust stock quantity
+POST {{baseUrl}}/api/v1/inventory/adjust
+Content-Type: {{contentType}}
+
+{
+    "productId": "{{productId}}",
+    "newQuantity": 120,
+    "reason": "Received new shipment"
+}
+
+### Create a second inventory item
+POST {{baseUrl}}/api/v1/inventory
+Content-Type: {{contentType}}
+
+{
+    "productId": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "sku": "PROD-002",
+    "quantityAvailable": 50,
+    "quantityReserved": 0,
+    "reorderThreshold": 10,
+    "reorderQuantity": 30,
+    "warehouseLocation": "MAIN-B2",
+    "lastRestockDate": "2023-08-15T00:00:00Z"
+}
+
+### Create a third inventory item (low stock scenario)
+POST {{baseUrl}}/api/v1/inventory
+Content-Type: {{contentType}}
+
+{
+    "productId": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "sku": "PROD-003",
+    "quantityAvailable": 15,
+    "quantityReserved": 0,
+    "reorderThreshold": 20,
+    "reorderQuantity": 40,
+    "warehouseLocation": "MAIN-C3",
+    "lastRestockDate": "2023-07-20T00:00:00Z"
+}
+
+### Test low stock scenario - reserve stock that will trigger low stock threshold
+POST {{baseUrl}}/api/v1/inventory/reserve
+Content-Type: {{contentType}}
+
+{
+    "productId": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "quantity": 10,
+    "orderId": "7fa85f64-5717-4562-b3fc-2c963f66afa6"
+}
+
+### Get the low stock item to verify
+GET {{baseUrl}}/api/v1/inventory/5fa85f64-5717-4562-b3fc-2c963f66afa6

@@ -4,8 +4,8 @@ namespace Inventory.API.Events;
 
 public abstract class InventoryEvent
 {
-    public Guid Id { get; set; }
-    public DateTime Timestamp { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string EventType { get; set; }
 }
 

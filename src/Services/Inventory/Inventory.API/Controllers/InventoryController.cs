@@ -1,4 +1,5 @@
 using Inventory.API.Models;
+using Inventory.API.Models.Dtos;
 using Inventory.API.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,16 +19,42 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet("{productId}")]
-    public async Task<IActionResult> GetByProductId(Guid productId)
+    public async Task<ActionResult<InventoryItemDto>> GetByProductId(Guid productId)
     {
         var item = await _inventoryService.GetByProductIdAsync(productId);
-
         if (item == null)
         {
             return NotFound();
         }
 
-        return Ok(item);
+        // Separately get the movements to avoid circular references
+        var movements = await _inventoryService.GetMovementsForProductAsync(productId, 10);
+
+        // Map to DTO to avoid circular references
+        var dto = new InventoryItemDto
+        {
+            Id = item.Id,
+            ProductId = item.ProductId,
+            Sku = item.Sku,
+            QuantityAvailable = item.QuantityAvailable,
+            QuantityReserved = item.QuantityReserved,
+            ReorderThreshold = item.ReorderThreshold,
+            ReorderQuantity = item.ReorderQuantity,
+            LastRestockDate = item.LastRestockDate,
+            WarehouseCode = item.WarehouseCode,
+            RecentMovements = movements.Select(m => new InventoryMovementDto
+            {
+                Id = m.Id,
+                Quantity = m.Quantity,
+                Type = m.Type,
+                ReferenceId = m.ReferenceId,
+                ReferenceType = m.ReferenceType,
+                Timestamp = m.Timestamp,
+                InitiatedBy = m.InitiatedBy
+            }).ToList()
+        };
+
+        return Ok(dto);
     }
 
     [HttpPost]

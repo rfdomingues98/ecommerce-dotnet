@@ -14,6 +14,7 @@ public interface IInventoryService
     Task<bool> AdjustStockAsync(Guid productId, int quantity, string reason);
     Task<InventoryItem> CreateInventoryItemAsync(InventoryItem item);
     Task UpdateInventoryItemAsync(InventoryItem item);
+    Task<List<InventoryMovement>> GetMovementsForProductAsync(Guid productId, int limit = 10);
 }
 
 public class InventoryService : IInventoryService
@@ -129,7 +130,11 @@ public class InventoryService : IInventoryService
         }
 
         // If not in cache, get from database
-        var item = await _context.InventoryItems.FirstOrDefaultAsync(i => i.ProductId == productId);
+        var item = await _context.InventoryItems
+            .AsNoTracking() // Use AsNoTracking for read-only operations
+            .FirstOrDefaultAsync(i => i.ProductId == productId);
+
+        // Don't include the movements directly, they'll be loaded separately when needed
 
         // Cache the result if found
         if (item != null)
@@ -277,5 +282,19 @@ public class InventoryService : IInventoryService
 
         // Update cache
         await _cacheService.SetAsync(cacheKey, item, TimeSpan.FromMinutes(5));
+    }
+
+    public async Task<List<InventoryMovement>> GetMovementsForProductAsync(Guid productId, int limit = 10)
+    {
+        var item = await _context.InventoryItems
+            .FirstOrDefaultAsync(i => i.ProductId == productId);
+
+        if (item == null) return new List<InventoryMovement>();
+
+        return await _context.InventoryMovements
+            .Where(m => m.InventoryItemId == item.Id)
+            .OrderByDescending(m => m.Timestamp)
+            .Take(limit)
+            .ToListAsync();
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace Inventory.API.Models;
 
@@ -14,6 +15,7 @@ public class InventoryMovement
     public string InitiatedBy { get; set; }
 
     // Navigation properties
+    [JsonIgnore]
     public virtual InventoryItem InventoryItem { get; set; }
 }
 
